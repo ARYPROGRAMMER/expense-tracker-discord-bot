@@ -22,11 +22,12 @@ const COMMANDS = {
  * @returns {Promise<void>}
  */
 async function processMessage(message) {
-  const content = message.content.trim();
+  // First, clean the message content by removing bot mentions
+  const cleanContent = message.content.replace(/<@!?[0-9]+>/g, "").trim();
 
   // Check if this is a command (starts with prefix)
-  if (content.startsWith(PREFIX)) {
-    await handleCommand(message, content.slice(PREFIX.length).trim());
+  if (cleanContent.startsWith(PREFIX)) {
+    await handleCommand(message, cleanContent.slice(PREFIX.length).trim());
     return;
   }
 

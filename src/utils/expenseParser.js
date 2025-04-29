@@ -52,10 +52,10 @@ function parseExpense(messageContent) {
   let date;
   if (dateStr) {
     // Parse the provided date
-    date = formatDate(new Date(dateStr));
+    date = formatDateToIST(new Date(dateStr));
   } else {
-    // Use today's date
-    date = formatDate(new Date());
+    // Use today's date in IST
+    date = formatDateToIST(new Date());
   }
 
   return {
@@ -68,18 +68,53 @@ function parseExpense(messageContent) {
 }
 
 /**
- * Format a Date object to MM/DD/YYYY format
- * @param {Date} date - The date to format
- * @returns {string} - Formatted date string
+ * Convert date to Indian Standard Time (IST/UTC+5:30)
+ * @param {Date} date - The date to convert
+ * @returns {Date} - Date in IST
  */
-function formatDate(date) {
-  const month = (date.getMonth() + 1).toString().padStart(2, "0");
-  const day = date.getDate().toString().padStart(2, "0");
-  const year = date.getFullYear();
+function convertToIST(date) {
+  // Create a new date object with the IST offset (+5:30)
+  // IST is UTC+5:30
+  const istTime = new Date(date.getTime() + 5.5 * 60 * 60 * 1000);
+  return istTime;
+}
 
-  return `${month}/${day}/${year}`;
+/**
+ * Format a Date object to DD/MM/YYYY format (IST format)
+ * @param {Date} date - The date to format
+ * @returns {string} - Formatted date string in IST
+ */
+function formatDateToIST(date) {
+  // Convert to IST first
+  const istDate = convertToIST(date);
+
+  const day = istDate.getDate().toString().padStart(2, "0");
+  const month = (istDate.getMonth() + 1).toString().padStart(2, "0");
+  const year = istDate.getFullYear();
+
+  return `${day}/${month}/${year}`;
+}
+
+/**
+ * Get current timestamp in IST formatted as string
+ * @returns {string} - Current timestamp in IST format: DD/MM/YYYY HH:MM:SS
+ */
+function getCurrentISTTimestamp() {
+  const now = convertToIST(new Date());
+
+  const day = now.getDate().toString().padStart(2, "0");
+  const month = (now.getMonth() + 1).toString().padStart(2, "0");
+  const year = now.getFullYear();
+  const hours = now.getHours().toString().padStart(2, "0");
+  const minutes = now.getMinutes().toString().padStart(2, "0");
+  const seconds = now.getSeconds().toString().padStart(2, "0");
+
+  return `${day}/${month}/${year} ${hours}:${minutes}:${seconds}`;
 }
 
 module.exports = {
   parseExpense,
+  convertToIST,
+  formatDateToIST,
+  getCurrentISTTimestamp,
 };

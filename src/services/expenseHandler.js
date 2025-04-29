@@ -14,8 +14,11 @@ const { fetchRecentExpenses } = require("./reportService");
  */
 async function handleExpenseMessage(message) {
   try {
-    // Parse the expense from the message
-    const expenseData = parseExpense(message.content);
+    // Clean the message content by removing bot mentions before parsing
+    const cleanContent = message.content.replace(/<@!?[0-9]+>/g, "").trim();
+
+    // Parse the expense from the cleaned message
+    const expenseData = parseExpense(cleanContent);
 
     if (!expenseData) {
       await message.reply(

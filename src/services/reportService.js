@@ -1,6 +1,7 @@
 const { google } = require("googleapis");
 const { analyzeExpenses } = require("./geminiService");
 const { getAuthClient } = require("./googleSheetsService");
+const { convertToIST } = require("../utils/expenseParser");
 
 /**
  * Get expense report for a specified number of days
@@ -54,6 +55,24 @@ async function getExpenseReport(message, days) {
 }
 
 /**
+ * Parse a date string in DD/MM/YYYY format
+ * @param {string} dateStr - Date string in DD/MM/YYYY format
+ * @returns {Date} - JavaScript Date object
+ */
+function parseISTDateString(dateStr) {
+  if (!dateStr) return null;
+
+  // Handle both DD/MM/YYYY and DD-MM-YYYY formats
+  const parts = dateStr.includes("/") ? dateStr.split("/") : dateStr.split("-");
+
+  if (parts.length !== 3) return null;
+
+  // Create date (parts[0] is day, parts[1] is month (0-based), parts[2] is year)
+  // Month is 0-indexed in JavaScript Date
+  return new Date(parts[2], parts[1] - 1, parts[0]);
+}
+
+/**
  * Fetch expense data from Google Sheets for the specified period
  * @param {number} days - Number of days to look back
  * @returns {Promise<Array>} - Array of expense records
@@ -67,7 +86,7 @@ async function fetchRecentExpenses(days) {
     // Get all expense data
     const response = await sheets.spreadsheets.values.get({
       spreadsheetId,
-      range: "Sheet1!A:C",
+      range: "Sheet1!A:E", // Now includes Description and Timestamp columns
     });
 
     // Skip the header row
@@ -75,22 +94,23 @@ async function fetchRecentExpenses(days) {
     if (rows.length <= 1) return [];
 
     const expenses = [];
-    const dateThreshold = new Date();
+    const dateThreshold = convertToIST(new Date());
     dateThreshold.setDate(dateThreshold.getDate() - days);
 
     // Process each row (skipping header)
     for (let i = 1; i < rows.length; i++) {
       const row = rows[i];
       if (row.length >= 3) {
-        const dateStr = row[0];
-        const expenseDate = new Date(dateStr);
+        const dateStr = row[0]; // Now in DD/MM/YYYY format
+        const expenseDate = parseISTDateString(dateStr);
 
-        // Check if the expense falls within the requested time frame
-        if (expenseDate >= dateThreshold) {
+        if (expenseDate && expenseDate >= dateThreshold) {
           expenses.push({
             date: dateStr,
             category: row[1],
             amount: parseFloat(row[2]),
+            description: row[3] || "", // Include description if available
+            timestamp: row[4] || "", // Include timestamp if available
           });
         }
       }

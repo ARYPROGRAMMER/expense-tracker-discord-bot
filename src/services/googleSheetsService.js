@@ -1,6 +1,7 @@
 const { google } = require("googleapis");
 const fs = require("fs");
 const path = require("path");
+const { getCurrentISTTimestamp } = require("../utils/expenseParser");
 
 // Define scope for Google Sheets API
 const SCOPES = ["https://www.googleapis.com/auth/spreadsheets"];
@@ -61,14 +62,17 @@ async function addExpenseToSheet(expenseData) {
       throw new Error("Google Sheet ID not found in environment variables");
     }
 
-    // Format data for Google Sheets - now includes description if available
+    // Get current IST timestamp
+    const timestamp = getCurrentISTTimestamp();
+
+    // Format data for Google Sheets with IST formatted dates
     const values = [
       [
-        expenseData.date,
+        expenseData.date, // Already in DD/MM/YYYY format for IST
         expenseData.category,
         expenseData.amount,
         expenseData.description || "", // Add description column
-        new Date().toISOString(), // Add timestamp
+        timestamp, // Add timestamp in IST format
       ],
     ];
 
@@ -116,7 +120,15 @@ async function initializeSheet() {
         range: "Sheet1!A1:E1",
         valueInputOption: "USER_ENTERED",
         resource: {
-          values: [["Date", "Category", "Amount", "Description", "Timestamp"]],
+          values: [
+            [
+              "Date (DD/MM/YYYY)",
+              "Category",
+              "Amount",
+              "Description",
+              "Timestamp (IST)",
+            ],
+          ],
         },
       });
       console.log("Sheet initialized with headers");
@@ -163,7 +175,15 @@ async function createNewSheet(sheetTitle) {
       range: `${sheetTitle}!A1:E1`,
       valueInputOption: "USER_ENTERED",
       resource: {
-        values: [["Date", "Category", "Amount", "Description", "Timestamp"]],
+        values: [
+          [
+            "Date (DD/MM/YYYY)",
+            "Category",
+            "Amount",
+            "Description",
+            "Timestamp (IST)",
+          ],
+        ],
       },
     });
 
@@ -196,11 +216,12 @@ async function exportBudgetData(budgetData) {
       await createNewSheet("Budgets");
     }
 
-    // Format budget data for the sheet
+    // Format budget data for the sheet with IST timestamps
+    const timestamp = getCurrentISTTimestamp();
     const budgetRows = Object.entries(budgetData).map(([category, data]) => [
       category,
       data.amount,
-      data.updatedAt,
+      timestamp, // Using IST timestamp instead of ISO string
     ]);
 
     // Clear existing data and add new data

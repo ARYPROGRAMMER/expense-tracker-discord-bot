@@ -22,7 +22,7 @@ function initializeGemini() {
     genAI = new GoogleGenerativeAI(apiKey);
 
     // Using Gemini Pro model - you can change to another model if needed
-    model = genAI.getGenerativeModel({ model: "gemini-pro" });
+    model = genAI.getGenerativeModel({ model: "gemini-2.0-flash" });
 
     console.log("Gemini AI initialized successfully");
     return true;
